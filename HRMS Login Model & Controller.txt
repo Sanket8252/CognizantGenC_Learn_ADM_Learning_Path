@@ -1,0 +1,114 @@
+LOGIN MODEL
+
+using Microsoft.AspNetCore.Identity;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace HouseRentalManagementApp.Models
+{
+    public class LoginValidate
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Display(Name = "Email Address")]
+        [Required(ErrorMessage = "Plase, enter your valid Email Address !")]
+        public string Email { get; set; }
+        [Display(Name = "Password")]
+        [Required(ErrorMessage = "Plase, enter your valid password !")]
+        public string Password { get; set; }
+        [Display(Name = "ForgotPassword")]
+        [Required(ErrorMessage = "Plase, enter your valid mail address !")]
+        public string ForgotPassword { get; set; }
+    }
+}
+
+-----------------------------------------------------------------------------------------------------
+LOGIN CONTROLLER 
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using HouseRentalManagementApp.Data;
+using HouseRentalManagementApp.Models;
+
+namespace HouseRentalManagementApp.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [AllowCrossSite]
+    public class LoginController : Controller
+    {
+        private readonly HouseRentalManagementAppContext _context;
+        public LoginController(HouseRentalManagementAppContext context)
+        {
+            _context = context;
+        }
+        //Get api/Logins
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Login>>> GetLogin()
+        {
+            return await _context.Logins.ToListAsync();
+        }
+        //Get:api/Logins/5
+        [HttpGet("{email}")]
+        public async Task<ActionResult<Login>> GetLogin(string email)
+        {
+            var login = _context.Logins.Where(d => d.Email == email).FirstOrDefault();
+            if (login == null)
+            {
+                return BadRequest("Email not found;");
+            }
+            return login ;
+        }
+        [Route("update")]
+        [HttpPut]
+        public async Task<ActionResult<List<Login>>> UpdateLogin(Login login)
+        {
+            var std = _context.Logins.Where(d => d.Email == login.Email).FirstOrDefault();
+            if (login == null)
+            {
+                return BadRequest("Email not found;");
+            }
+            try
+            {
+                std.Email = login.Email;
+                std.ForgotPassword = login.ForgotPassword;
+                await _context.SaveChangesAsync();
+                return Ok("Updated");
+
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("SomthingWrong");
+            }
+        }
+        [Route("add")]
+        [HttpPost]
+        public async Task<ActionResult<Login>> PostLogin(Login login)
+        {
+            var std = _context.Logins.Where(d => d.Email == login.Email).FirstOrDefault();
+            if (std != null)
+            {
+                return BadRequest("Email ID is allready present");
+            }
+            try
+            {
+                _context.Logins.Add(login);
+                await _context.SaveChangesAsync();
+                return Ok("Login Successful");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return BadRequest("Somthing is wrong");
+            }
+        }
+    }
+}
